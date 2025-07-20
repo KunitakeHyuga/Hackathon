@@ -152,10 +152,10 @@ const DialectTranslator: React.FC = () => {
           <div className="flex items-center justify-center gap-3 mb-4">
             <Globe className="w-8 h-8 text-cyan-400" />
             <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-pink-400 bg-clip-text text-transparent">
-              方言トランスレーター
+              どげんこつ？
             </h1>
           </div>
-          <p className="text-gray-300 text-lg">日本全国の方言を楽しく学ぼう</p>
+          <p className="text-gray-300 text-lg">日本全国の気になる方言を翻訳してみよう</p>
         </div>
 
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
@@ -247,7 +247,7 @@ const DialectTranslator: React.FC = () => {
         </div>
 
         <div className="text-center mt-6 text-gray-400 text-sm">
-          日本の方言文化を楽しく学びましょう 🗾
+          翻訳した方言を使ってみよう
         </div>
       </div>
     </div>
