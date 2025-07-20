@@ -23,7 +23,24 @@ interface Message {
   direction?: TranslationDirection;
 }
 
-const GEMINI_API_KEY = "<APIキー>"; // 🔑 ← ここにあなたのAPIキーを入力してください
+// 履歴型
+interface HistoryItem {
+  id: number;
+  user_input: string;
+  bot_output: string;
+  dialect: string;
+  direction: string;
+  created_at: string;
+}
+
+// 会話型
+interface ConversationItem {
+  id: number;
+  title: string | null;
+  created_at: string;
+}
+
+const GEMINI_API_KEY = "AIzaSyD_snLOn01KVqN784ttg9g7vcsjgyXlR-8"; // 🔑 ← ここにあなたのAPIキーを入力してください
 
 const DialectTranslator: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,6 +50,10 @@ const DialectTranslator: React.FC = () => {
     useState<TranslationDirection>("standard-to-dialect");
   const [isTranslating, setIsTranslating] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [selectedHistory, setSelectedHistory] = useState<HistoryItem | null>(null);
+  const [conversations, setConversations] = useState<ConversationItem[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<ConversationItem | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -41,6 +62,56 @@ const DialectTranslator: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // 履歴取得
+  useEffect(() => {
+    fetch("http://localhost:8000/history")
+      .then((res) => res.json())
+      .then((data) => setHistory(data))
+      .catch(() => setHistory([]));
+  }, []);
+
+  // 会話一覧取得
+  useEffect(() => {
+    fetch("http://localhost:8000/conversations")
+      .then((res) => res.json())
+      .then((data) => setConversations(data))
+      .catch(() => setConversations([]));
+  }, []);
+
+  // 会話選択時にその会話の履歴を取得
+  useEffect(() => {
+    if (selectedConversation) {
+      const url = `http://localhost:8000/history?conversation_id=${selectedConversation.id}`;
+      console.log('履歴取得URL:', url, 'conversation_id:', selectedConversation.id);
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => setHistory(data))
+        .catch(() => setHistory([]));
+    }
+  }, [selectedConversation]);
+
+  // 履歴クリック時に内容をチャット欄に表示
+  useEffect(() => {
+    if (selectedHistory) {
+      setMessages([
+        {
+          id: Date.now(),
+          type: "user",
+          content: selectedHistory.user_input,
+          timestamp: new Date(selectedHistory.created_at),
+        },
+        {
+          id: Date.now() + 1,
+          type: "bot",
+          content: selectedHistory.bot_output,
+          dialect: selectedHistory.dialect as Dialect,
+          direction: selectedHistory.direction as TranslationDirection,
+          timestamp: new Date(selectedHistory.created_at),
+        },
+      ]);
+    }
+  }, [selectedHistory]);
 
   const callGeminiAPI = async (
     text: string,
@@ -124,6 +195,29 @@ const DialectTranslator: React.FC = () => {
       };
 
       setMessages((prev) => [...prev, botMessage]);
+
+      // conversationIdで履歴保存
+      console.log('履歴保存時 conversation_id:', conversationId);
+      const historyPayload = {
+        user_input: inputText,
+        bot_output: translatedText,
+        dialect: selectedDialect,
+        direction: translationDirection,
+        conversation_id: conversationId,
+      };
+      console.log('履歴保存ペイロード:', historyPayload);
+      const postRes = await fetch("http://localhost:8000/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(historyPayload),
+      });
+      console.log('履歴保存POST:', postRes.status);
+
+      // 保存後に履歴を再取得
+      const getRes = await fetch(`http://localhost:8000/history?conversation_id=${conversationId}`);
+      const data = await getRes.json();
+      console.log('履歴取得GET:', data);
+      setHistory(data);
     } catch (error) {
       console.error("Translation error:", error);
       const errorMessage: Message = {
