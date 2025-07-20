@@ -18,21 +18,21 @@ services:
       - ./mysql/conf.d:/etc/myaql/conf.d
       - ./mysql/log/mysql:/var/log/mysql
 
-  backend:
-    build: ./backend
-    container_name: backend
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-    volumes:
-      - ./backend:/code
-    ports:
-      - "8000:8000"
-    environment:
-      - DB_HOST=mysql
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_NAME=db
-    depends_on:
-      - mysql
+  # backend:
+  #   build: ./backend
+  #   container_name: backend
+  #   command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+  #   volumes:
+  #     - ./backend:/code
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DB_HOST=mysql
+  #     - DB_USER=user
+  #     - DB_PASSWORD=password
+  #     - DB_NAME=db
+  #   depends_on:
+  #     - mysql
 
   frontend:
     build: ./frontend
