@@ -5,6 +5,10 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from app.models import UserTable
 from app.schemas import UserCreate, UserUpdate
 from typing import List, Optional
+from app.models import HistoryTable
+from app.schemas import HistoryCreate
+from app.models import ConversationTable
+from app.schemas import ConversationCreate
 
 
 # 接続したいDBの基本情報を設定
@@ -77,3 +81,63 @@ def delete_user(user_id: int) -> bool:
     session.delete(db_user)
     session.commit()
     return True
+
+# 履歴取得
+def get_histories() -> List[HistoryTable]:
+    return session.query(HistoryTable).order_by(HistoryTable.created_at.desc()).all()
+
+# 履歴追加
+def create_history(history: HistoryCreate) -> HistoryTable:
+    db_history = HistoryTable(**history.dict())
+    session.add(db_history)
+    session.commit()
+    session.refresh(db_history)
+    return db_history
+
+def get_conversations() -> List[ConversationTable]:
+    return session.query(ConversationTable).order_by(ConversationTable.created_at.desc()).all()
+
+def create_conversation(conversation: ConversationCreate) -> ConversationTable:
+    db_conversation = ConversationTable(**conversation.dict())
+    session.add(db_conversation)
+    session.commit()
+    session.refresh(db_conversation)
+    return db_conversation
+
+def update_conversation_by_id(conversation_id: int, conversation: ConversationCreate) -> Optional[ConversationTable]:
+    try:
+        db_conversation = session.query(ConversationTable).filter(ConversationTable.id == conversation_id).first()
+        if db_conversation is None:
+            return None
+        
+        if conversation.title is not None:
+            db_conversation.title = conversation.title
+        
+        session.commit()
+        session.refresh(db_conversation)
+        return db_conversation
+    except Exception as e:
+        session.rollback()
+        print(f"Error updating conversation: {e}")
+        return None
+
+def get_histories_by_conversation(conversation_id: int) -> List[HistoryTable]:
+    return session.query(HistoryTable).filter(HistoryTable.conversation_id == conversation_id).order_by(HistoryTable.created_at.asc()).all()
+
+def delete_conversation_by_id(conversation_id: int) -> bool:
+    try:
+        # 関連する履歴も削除
+        session.query(HistoryTable).filter(HistoryTable.conversation_id == conversation_id).delete()
+        
+        # 会話を削除
+        db_conversation = session.query(ConversationTable).filter(ConversationTable.id == conversation_id).first()
+        if db_conversation is None:
+            return False
+        
+        session.delete(db_conversation)
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        print(f"Error deleting conversation: {e}")
+        return False
