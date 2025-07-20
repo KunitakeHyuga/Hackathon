@@ -4,3 +4,4 @@ mysqlclient
 sqlalchemy
 pymysql
 python-dotenv
+httpx
